@@ -3,7 +3,7 @@
 
 ES_LIVE_INDEXING = False
 ES_INDEX_PREFIX = 'sumotest'
-ES_INDEXES = {'default': 'test'}
+ES_INDEXES = {'default': 'test_default', 'other': 'test_other'}
 ES_WRITE_INDEXES = ES_INDEXES
 
 # Make sure Celery is EAGER.

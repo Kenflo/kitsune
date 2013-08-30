@@ -686,6 +686,10 @@ class DocumentMappingType(SearchMappingType):
                 'document_keywords']
 
     @classmethod
+    def get_index_name(cls):
+        return 'other'
+
+    @classmethod
     def get_mapping(cls):
         return {
             'properties': {

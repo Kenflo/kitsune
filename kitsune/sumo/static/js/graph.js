@@ -84,51 +84,44 @@
             var lineBase = svg.append('g')
                 .classed('timeseries-line', true);
 
-            var scaleX = d3.scale.linear();
-            var scaleY = d3.scale.linear();
+            this.scaleX = d3.scale.linear();
+            this.scaleY = d3.scale.linear();
+
+            var zeroLine = d3.svg.line()
+                .x(G.compose(G.get(0), this.scaleX))
+                .y(this.scaleY.bind(null, 0));
 
             var line = d3.svg.line()
-                .x(G.compose(G.get(0), scaleX))
-                .y(G.compose(G.get(1), scaleY));
+                .x(G.compose(G.get(0), this.scaleX))
+                .y(G.compose(G.get(1), this.scaleY));
 
             this.layer('lines', lineBase, {
                 dataBind: function(data) {
+                    return this.selectAll('path').data(data)
+                },
+                insert: function() {
                     var chart = this.chart();
-                    var minX = Infinity;
-                    var maxX = -Infinity;
-                    var minY = 0;
-                    var maxY = -Infinity;
-
-                    var speccedData = chart.specs().map(function(spec) {
-                        return data.map(function(d) {
-                            var x = spec.x(d);
-                            var y = spec.y(d);
-                            minX = Math.min(minX, x);
-                            maxX = Math.max(minX, x);
-                            minY = Math.min(minY, y);
-                            maxY = Math.max(maxY, y);
-                            return [x, y];
-                        });
-                    });
 
                     svg.attr('height', chart.height())
                         .attr('width', chart.width());
-                    scaleX.range([0, chart.width()])
-                        .domain([minX, maxX]);
-                    scaleY.range([chart.height(), 0])
-                        .domain([minY, maxY]);
 
-                    return this.selectAll('path').data(speccedData);
-                },
-                insert: function() {
                     return this.append('path')
-                        .attr('stroke', '#f00')
                         .attr('strokeWidth', 2)
                         .attr('fill', 'none');
                 },
                 events: {
                     'enter': function() {
-                        return this.attr('d', line);
+                        // return this.attr('d', G.compose(G.get('points'), line));
+                        return this
+                            .attr('d', G.compose(G.get('points'), zeroLine))
+                            .attr('stroke', '#000');
+                    },
+                    'enter:transition': function() {
+                        return this
+                            .delay(function(d, i) { return i * 200; })
+                            .duration(700)
+                            .attr('d', G.compose(G.get('points'), line))
+                            .attr('stroke', G.get('stroke'));
                     }
                 }
             });
@@ -137,6 +130,42 @@
         width: G.property(1000),
         height: G.property(400),
         specs: G.property([]),
+
+        /* This is called at the beginning .draw(), and is the last chance
+         * to fiddle with the data. It will be called right before any of the
+         * layers' databind methods, and the return value will be the argument
+         * to those functions. */
+        transform: function(data) {
+            var minX = Infinity;
+            var maxX = -Infinity;
+            var minY = 0;
+            var maxY = -Infinity;
+
+            var speccedData = this.specs().map(function(spec) {
+                return {
+                    stroke: spec.stroke || '#000',
+                    name: spec.name,
+                    points: data.map(function(d) {
+                        var x = spec.x(d);
+                        var y = spec.y(d);
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(minX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                        return [x, y];
+                    })
+                };
+            });
+
+            this.scaleX
+                .range([0, this.width()])
+                .domain([minX, maxX]);
+            this.scaleY
+                .range([this.height(), 0])
+                .domain([minY, maxY]);
+
+            return speccedData;
+        },
 
     });
 

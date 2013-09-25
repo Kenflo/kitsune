@@ -26,21 +26,24 @@ var specs = [
   {
     x: k.graph.get('x'),
     y: k.graph.get('a'),
+    stroke: '#f00',
   },
   {
     x: k.graph.get('x'),
     y: k.graph.get('b'),
+    stroke: '#0f0',
   },
   {
     x: k.graph.get('x'),
     y: k.graph.get('c'),
+    stroke: '#00f',
   },
 ];
 
 var graph = d3.select('#viz')
   .chart('TimeSeries')
-  .width(1000)
-  .height(100)
+  .width(800)
+  .height(150)
   .specs(specs)
   .draw(data);
 

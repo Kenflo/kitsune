@@ -5,6 +5,13 @@
 </style>
 <body>
 
+<label for="a">a:</label>
+<input id="a" value="1" type="textbox">
+<br>
+<label for="b">b:</label>
+<input id="b" value="1" type="textbox">
+
+
 <div id='viz'></div>
 
 <script src='js/libs/d3.js'></script>
@@ -12,40 +19,70 @@
 <script src='js/graph.js'></script>
 <script>
 
-var data = [];
-for (var x = 0; x < Math.PI * 8; x += 0.1) {
-  data.push({
-    x: x,
-    a: Math.sin(x),
-    b: Math.cos(x),
-    c: Math.sin(x) + Math.cos(x),
-  });
-}
+  var G = k.graph;
 
-var specs = [
-  {
-    x: k.graph.get('x'),
-    y: k.graph.get('a'),
-    stroke: '#f00',
-  },
-  {
-    x: k.graph.get('x'),
-    y: k.graph.get('b'),
-    stroke: '#0f0',
-  },
-  {
-    x: k.graph.get('x'),
-    y: k.graph.get('c'),
-    stroke: '#00f',
-  },
-];
+  var data = [];
+  for (var x = 0; x < Math.PI * 8; x += 0.1) {
+    data.push({
+      x: x,
+      a: Math.sin(x),
+      b: Math.cos(x),
+    });
+  }
 
-var graph = d3.select('#viz')
-  .chart('TimeSeries')
-  .width(800)
-  .height(150)
-  .specs(specs)
-  .draw(data);
+  var valueFromId = (function() {
+    var cache = {};
+
+    function make(id) {
+      return function() {
+        if (!(id in cache)) {
+          cache[id] = parseInt(document.getElementById(id).value);
+        }
+        return cache[id];
+      };
+    }
+
+    make.clear = function() {
+      cache = {};
+    }
+
+    return make;
+  })();
+
+  var specs = [
+    {
+      x: G.get('x'),
+      y: G.multiply(G.get('a'), valueFromId('a')),
+      stroke: '#f00',
+    },
+    {
+      x: G.get('x'),
+      y: G.multiply(G.get('b'), valueFromId('b')),
+      stroke: '#0f0',
+    },
+    {
+      x: G.get('x'),
+      y: G.add(
+        G.multiply(G.get('a'), valueFromId('a')),
+        G.multiply(G.get('b'), valueFromId('b'))
+      ),
+      stroke: '#00f',
+    },
+  ];
+
+  var graph = d3.select('#viz')
+    .chart('TimeSeries')
+    .width(800)
+    .height(150)
+    .specs(specs);
+
+  graph.draw(data);
+
+  document.addEventListener('keyup', function(e) {
+    if (e.target.mozMatchesSelector('input[type=textbox]')) {
+      valueFromId.clear();
+      graph.draw(data);
+    }
+  }, false);
 
 </script>
-

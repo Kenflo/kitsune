@@ -75,6 +75,39 @@
         };
     }
 
+    /* Create a function that sums functors.
+     *
+     * `add(a, b)(1)` is equivalent to `a(1) + b(1)`.
+     * `add(a, 2)(1)` is equivalent to `a(1) + 2`.
+     */
+    G.add = function(/* funcs */) {
+        var functors = Array.prototype.map.call(arguments, d3.functor);
+        return function(d) {
+            var sum = 0;
+            functors.forEach(function(f) {
+                sum += f(d);
+            });
+            return sum;
+        };
+    }
+
+    /* Create a function that multiplies functors.
+     *
+     * `multiply(a, b, c)(2)` is equivalent to `a(2) * b(2) * c(2)`.
+     * `multiply(a, b, 2)(3)` is equivalent to `a(3) * b(3) * 2`.
+     */
+    G.multiply = function(/* funcs */) {
+        var functors = Array.prototype.map.call(arguments, d3.functor);
+        return function(d) {
+            var product = 1;
+            functors.forEach(function(f) {
+                product *= f(d);
+            });
+            return product;
+        };
+    }
+
+
     // Graph builders
 
     d3.chart('TimeSeries', {
@@ -111,7 +144,6 @@
                 },
                 events: {
                     'enter': function() {
-                        // return this.attr('d', G.compose(G.get('points'), line));
                         return this
                             .attr('d', G.compose(G.get('points'), zeroLine))
                             .attr('stroke', '#000');
@@ -122,7 +154,18 @@
                             .duration(700)
                             .attr('d', G.compose(G.get('points'), line))
                             .attr('stroke', G.get('stroke'));
-                    }
+                    },
+                    'update': function() {
+                        // return this
+                        //     .attr('d', G.compose(G.get('points'), zeroLine))
+                        //     .attr('stroke', '#000');
+                    },
+                    'update:transition': function() {
+                        return this
+                            .duration(700)
+                            .attr('d', G.compose(G.get('points'), line))
+                            .attr('stroke', G.get('stroke'));
+                    },
                 }
             });
         },

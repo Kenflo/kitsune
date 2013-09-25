@@ -96,4 +96,74 @@ $(document).ready(function() {
         equal(G.compose(a, a)(0), 2);
     });
 
+    module('k.graph.add');
+
+    test('with two functions', function() {
+        function a(n) {
+            return n;
+        }
+        function b(n) {
+            return n * 2;
+        }
+
+        // 3 + (3 * 2) = 9
+        equal(G.add(a, b)(3), 9);
+    });
+
+    test('with a function and a value', function() {
+        function a(n) {
+            return n;
+        }
+
+        // 3 + 2 = 5
+        equal(G.add(a, 2)(3), 5);
+    });
+
+    test('three things', function() {
+        function a(n) {
+            return n;
+        }
+        function b(n) {
+            return n * 2;
+        }
+
+        // 4 + (4 * 2) + 2 = 14
+        equal(G.add(a, b, 2)(4), 14);
+    });
+
+    module('k.graph.multiply');
+
+    test('with two functions', function() {
+        function a(n) {
+            return n;
+        }
+        function b(n) {
+            return n * 2;
+        }
+
+        // 3 * (3 * 2) = 18
+        equal(G.multiply(a, b)(3), 18);
+    });
+
+    test('with a function and a value', function() {
+        function a(n) {
+            return n;
+        }
+
+        // 3 * 2 = 6
+        equal(G.multiply(a, 2)(3), 6);
+    });
+
+    test('three things', function() {
+        function a(n) {
+            return n;
+        }
+        function b(n) {
+            return n * 2;
+        }
+
+        // 4 * (4 * 2) * 2 = 64
+        equal(G.multiply(a, b, 2)(4), 64);
+    });
+
 });

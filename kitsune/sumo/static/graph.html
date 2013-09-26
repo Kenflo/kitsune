@@ -10,6 +10,10 @@
 <br>
 <label for="b">b:</label>
 <input id="b" value="1" type="textbox">
+<br>
+<button id="big">Big</button>
+<button id="small">Small</button>
+<br>
 
 
 <div id='viz'></div>
@@ -71,18 +75,32 @@
   ];
 
   var graph = d3.select('#viz')
-    .chart('TimeSeries')
+    .chart('SpecLines')
     .width(800)
     .height(150)
     .specs(specs);
 
   graph.draw(data);
 
-  document.addEventListener('keyup', function(e) {
-    if (e.target.mozMatchesSelector('input[type=textbox]')) {
+  var matches = function(elem, selector) {
+    var method = (elem.matchesSelector ||
+                  elem.webkitMatchesSelector ||
+                  elem.mozMatchesSelector);
+    return method.call(elem, selector);
+  }
+
+  document.addEventListener('change', function(e) {
+    if (matches(e.target, 'input[type=textbox]')) {
       valueFromId.clear();
       graph.draw(data);
     }
   }, false);
 
+  document.addEventListener('click', function(e) {
+    if (matches(e.target, '#big')) {
+      graph.width(1300).height(300).draw(data);
+    } else if (matches(e.target, '#small')) {
+      graph.width(500).height(200).draw(data);
+    }
+  }, false);
 </script>

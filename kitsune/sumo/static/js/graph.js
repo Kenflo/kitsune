@@ -110,12 +110,17 @@
 
     // Graph builders
 
-    d3.chart('TimeSeries', {
+    d3.chart('SpecLines', {
         initialize: function() {
-            var svg = this.base.append('svg');
+            var TRANS_TIME = 600;
 
+            var svg = this.base.append('svg');
+            var background = svg.append('g')
+                .classed('bg', true);
             var lineBase = svg.append('g')
-                .classed('timeseries-line', true);
+                .classed('lines', true);
+            var axesBase = svg.append('g')
+                .classed('axes', true);
 
             this.scaleX = d3.scale.linear();
             this.scaleY = d3.scale.linear();
@@ -128,22 +133,120 @@
                 .x(G.compose(G.get(0), this.scaleX))
                 .y(G.compose(G.get(1), this.scaleY));
 
-            this.layer('lines', lineBase, {
+            function d3Dummy() {
+                return d3.select(this);
+            }
+
+            this.layer('svg', svg, {
                 dataBind: function(data) {
-                    return this.selectAll('path').data(data)
+                    var chart = this.chart();
+                    svg.transition()
+                       .duration(TRANS_TIME)
+                       .attr('width', chart.width())
+                       .attr('height', chart.height());
+                    return svg.data([]);
+                },
+                insert: d3Dummy,
+                events: {
+                    enter: d3Dummy,
+                }
+            });
+
+            this.layer('background', background, {
+                dataBind: function(data) {
+                    var chart = this.chart();
+                    return this
+                        .append('rect')
+                        .attr('width', chart.width())
+                        .attr('height', chart.height())
+                        .attr('fill', '#eee')
+                        .data([]);
+                },
+                insert: d3Dummy,
+                events: {
+                    enter: d3Dummy,
+                }
+            });
+
+            this.layer('axes', axesBase, {
+                dataBind: function(data) {
+                    var chart = this.chart();
+                    return this.selectAll('g.axis').data([
+                        {
+                            axis: d3.svg.axis()
+                                .scale(chart.scaleY)
+                                .orient('left')
+                                .ticks(4)
+                                .tickSize(1),
+                            scale: chart.scaleY,
+                            orient: 'left',
+                            ticks: 4,
+                        },
+                        {
+                            axis: d3.svg.axis()
+                                .scale(chart.scaleX)
+                                .orient('bottom')
+                                .ticks(10)
+                                .tickSize(1),
+                            scale: chart.scaleX,
+                            orient: 'bottom',
+                            ticks: 10,
+                        },
+                    ]);
                 },
                 insert: function() {
-                    var chart = this.chart();
+                    return this.append('g')
+                        .classed('axis', true)
+                },
+                events: {
+                    enter: function() {
+                        var chart = this.chart();
 
-                    svg.attr('height', chart.height())
-                        .attr('width', chart.width());
+                        this.each(function(d) {
+                            var elem = d3.select(this);
+                            var tx = 0;
+                            var ty = 0;
+                            if (d.orient === 'left') {
+                                tx = 30;
+                            } else if (d.orient === 'bottom') {
+                                ty = chart.height() - 30;
+                            }
+                            elem.attr('transform', 'translate(' + tx + ', ' + ty + ')')
+                                .call(d.axis);
+                        });
+                    },
+                    'update:transition': function() {
+                        var chart = this.chart();
 
+                        this.each(function(d) {
+                            var elem = d3.select(this);
+                            var tx = 0;
+                            var ty = 0;
+                            if (d.orient === 'left') {
+                                tx = 30;
+                            } else if (d.orient === 'bottom') {
+                                ty = chart.height() - 30;
+                            }
+                            elem.transition()
+                                .duration(TRANS_TIME)
+                                .attr('transform', 'translate(' + tx + ', ' + ty + ')')
+                                .call(d.axis);
+                        });
+                    },
+                }
+            });
+
+            this.layer('lines', lineBase, {
+                dataBind: function(data) {
+                    return this.selectAll('path').data(data);
+                },
+                insert: function() {
                     return this.append('path')
                         .attr('strokeWidth', 2)
                         .attr('fill', 'none');
                 },
                 events: {
-                    'enter': function() {
+                    enter: function() {
                         return this
                             .attr('d', G.compose(G.get('points'), zeroLine))
                             .attr('stroke', '#000');
@@ -151,32 +254,28 @@
                     'enter:transition': function() {
                         return this
                             .delay(function(d, i) { return i * 200; })
-                            .duration(700)
+                            .duration(TRANS_TIME)
                             .attr('d', G.compose(G.get('points'), line))
                             .attr('stroke', G.get('stroke'));
-                    },
-                    'update': function() {
-                        // return this
-                        //     .attr('d', G.compose(G.get('points'), zeroLine))
-                        //     .attr('stroke', '#000');
                     },
                     'update:transition': function() {
                         return this
-                            .duration(700)
+                            .duration(TRANS_TIME)
                             .attr('d', G.compose(G.get('points'), line))
                             .attr('stroke', G.get('stroke'));
                     },
-                }
+                },
             });
         },
 
         width: G.property(1000),
         height: G.property(400),
+        padding: G.property([5, 0, 30, 30]),
         specs: G.property([]),
 
         /* This is called at the beginning .draw(), and is the last chance
          * to fiddle with the data. It will be called right before any of the
-         * layers' databind methods, and the return value will be the argument
+         * layers' dataBind methods, and the return value will be the argument
          * to those functions. */
         transform: function(data) {
             var minX = Infinity;
@@ -200,11 +299,16 @@
                 };
             });
 
+            var left = this.padding()[3];
+            var right = this.width() - this.padding()[1];
+            var top = this.padding()[0];
+            var bottom = this.height() - this.padding()[2];
+
             this.scaleX
-                .range([0, this.width()])
+                .range([left, right])
                 .domain([minX, maxX]);
             this.scaleY
-                .range([this.height(), 0])
+                .range([bottom, top])
                 .domain([minY, maxY]);
 
             return speccedData;

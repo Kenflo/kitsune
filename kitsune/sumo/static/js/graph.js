@@ -330,6 +330,15 @@
         initialize: function() {
             var TRANS_TIME = 700;
 
+            this.base.style('position', 'relative');
+
+            var tooltip = this.base.append('div')
+                .style('opacity', '0.0')
+                .style('position', 'absolute')
+                .style('background', '#ddd')
+                .style('padding', '10px')
+                .style('pointer-events', 'none');
+
             var svg = this.base.append('svg');
             var daysBase = svg.append('g')
                 .classed('days', true);
@@ -342,6 +351,17 @@
             this.cellScaleX = d3.scale.linear();
             this.cellScaleY = d3.scale.linear();
             this.colorScale = d3.scale.linear();
+
+            d3.select('body').on('mousemove', function(d, i) {
+                var mouse = d3.mouse(daysBase[0][0]);
+                if (mouse[0] < 0 || mouse[0] > this.width() ||
+                    mouse[1] < 0 || mouse[1] > this.height()) {
+
+                    tooltip.transition().duration(100)
+                        .style('opacity', '0.0')
+                        .style('transform', 'translate(0,0)');
+                }
+            }.bind(this));
 
             function d3Dummy() {
                 return d3.select(this);
@@ -384,6 +404,7 @@
                 events: {
                     enter: function() {
                         var chart = this.chart();
+
                         return this
                             .attr('fill', G.compose(G.get('heat'), chart.colorScale))
                             .attr('width', chart.cellSize)
@@ -392,6 +413,21 @@
                                 var x = chart.cellScaleX(xIndex(d));
                                 var y = chart.cellScaleY(yIndex(d));
                                 return 'translate(' + x + ',' + y + ')';
+                            })
+                            .on('mouseover', function(d, i) {
+                                var elem = d3.select(this);
+                                var trans = elem.attr('transform');
+                                var match = /.*translate\((.*)\).*/.exec(trans);
+                                if (match) {
+                                    match = match[1].split(',');
+                                    var x = parseInt(match[0]) - chart.cellSize / 2;
+                                    var y = parseInt(match[1]) + chart.cellSize * 1.25;
+
+                                    tooltip
+                                        .text(d3.time.format('%B %d, %Y')(d.date))
+                                        .style('opacity', '1.0')
+                                        .style('transform', 'translate(' + x + 'px,' + y + 'px)')
+                                }
                             });
                     },
                     'update:transition': function() {

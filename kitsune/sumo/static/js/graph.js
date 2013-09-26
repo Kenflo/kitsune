@@ -66,10 +66,10 @@
      */
     G.compose = function(/* funcs */) {
         var funcs = Array.prototype.slice.call(arguments);
-        return function(d) {
+        return function(d, i) {
             var res = d;
             funcs.forEach(function(func) {
-                res = func(res);
+                res = func(res, i);
             });
             return res;
         };
@@ -82,10 +82,10 @@
      */
     G.add = function(/* funcs */) {
         var functors = Array.prototype.map.call(arguments, d3.functor);
-        return function(d) {
+        return function(d, i) {
             var sum = 0;
             functors.forEach(function(f) {
-                sum += f(d);
+                sum += f(d, i);
             });
             return sum;
         };
@@ -98,13 +98,22 @@
      */
     G.multiply = function(/* funcs */) {
         var functors = Array.prototype.map.call(arguments, d3.functor);
-        return function(d) {
+        return function(d, i) {
             var product = 1;
             functors.forEach(function(f) {
-                product *= f(d);
+                product *= f(d, i);
             });
             return product;
         };
+    }
+
+    /* Returns it's second argument. 
+     * 
+     * Intended for use in places where d3 passes the current index as
+     * the second argument.
+     */
+    G.index = function(d, i) {
+        return i;
     }
 
 
@@ -172,26 +181,16 @@
                 dataBind: function(data) {
                     var chart = this.chart();
                     return this.selectAll('g.axis').data([
-                        {
-                            axis: d3.svg.axis()
-                                .scale(chart.scaleY)
-                                .orient('left')
-                                .ticks(4)
-                                .tickSize(1),
-                            scale: chart.scaleY,
-                            orient: 'left',
-                            ticks: 4,
-                        },
-                        {
-                            axis: d3.svg.axis()
-                                .scale(chart.scaleX)
-                                .orient('bottom')
-                                .ticks(10)
-                                .tickSize(1),
-                            scale: chart.scaleX,
-                            orient: 'bottom',
-                            ticks: 10,
-                        },
+                        d3.svg.axis()
+                            .scale(chart.scaleY)
+                            .orient('left')
+                            .ticks(4)
+                            .tickSize(1),
+                        d3.svg.axis()
+                            .scale(chart.scaleX)
+                            .orient('bottom')
+                            .ticks(10)
+                            .tickSize(1),
                     ]);
                 },
                 insert: function() {
@@ -202,35 +201,35 @@
                     enter: function() {
                         var chart = this.chart();
 
-                        this.each(function(d) {
+                        this.each(function(axis) {
                             var elem = d3.select(this);
                             var tx = 0;
                             var ty = 0;
-                            if (d.orient === 'left') {
+                            if (axis.orient() === 'left') {
                                 tx = 30;
-                            } else if (d.orient === 'bottom') {
+                            } else if (axis.orient() === 'bottom') {
                                 ty = chart.height() - 30;
                             }
                             elem.attr('transform', 'translate(' + tx + ', ' + ty + ')')
-                                .call(d.axis);
+                                .call(axis);
                         });
                     },
                     'update:transition': function() {
                         var chart = this.chart();
 
-                        this.each(function(d) {
+                        this.each(function(axis) {
                             var elem = d3.select(this);
                             var tx = 0;
                             var ty = 0;
-                            if (d.orient === 'left') {
+                            if (axis.orient() === 'left') {
                                 tx = 30;
-                            } else if (d.orient === 'bottom') {
+                            } else if (axis.orient() === 'bottom') {
                                 ty = chart.height() - 30;
                             }
                             elem.transition()
                                 .duration(TRANS_TIME)
                                 .attr('transform', 'translate(' + tx + ', ' + ty + ')')
-                                .call(d.axis);
+                                .call(axis);
                         });
                     },
                 }
@@ -329,12 +328,19 @@
      */
     d3.chart('CalendarHeatMap', {
         initialize: function() {
+            var TRANS_TIME = 700;
+
             var svg = this.base.append('svg');
             var daysBase = svg.append('g')
                 .classed('days', true);
+            var xAxisBase = svg.append('g')
+                .classed('x axis', true);
+            var yAxisBase = svg.append('g')
+                .classed('y axis', true);
 
             this.numScale = d3.scale.linear();
-            this.cellScale = d3.scale.linear();
+            this.cellScaleX = d3.scale.linear();
+            this.cellScaleY = d3.scale.linear();
             this.colorScale = d3.scale.linear();
 
             function d3Dummy() {
@@ -354,7 +360,8 @@
             this.layer('svg', svg, {
                 dataBind: function(data) {
                     var chart = this.chart();
-                    svg.attr('width', chart.width())
+                    svg.transition().duration(TRANS_TIME)
+                        .attr('width', chart.width())
                         .attr('height', chart.height());
                     return svg.data([]);
                 },
@@ -379,12 +386,117 @@
                         var chart = this.chart();
                         return this
                             .attr('fill', G.compose(G.get('heat'), chart.colorScale))
+                            .attr('width', chart.cellSize)
+                            .attr('height', chart.cellSize)
                             .attr('transform', function(d) {
-                                var x = chart.cellScale(xIndex(d));
-                                var y = chart.cellScale(yIndex(d));
+                                var x = chart.cellScaleX(xIndex(d));
+                                var y = chart.cellScaleY(yIndex(d));
                                 return 'translate(' + x + ',' + y + ')';
                             });
                     },
+                    'update:transition': function() {
+                        var chart = this.chart();
+                        return this.transition()
+                            .duration(TRANS_TIME)
+                            .attr('fill', G.compose(G.get('heat'), chart.colorScale))
+                            .attr('transform', function(d) {
+                                var x = chart.cellScaleX(xIndex(d));
+                                var y = chart.cellScaleY(yIndex(d));
+                                return 'translate(' + x + ',' + y + ')';
+                            })
+                            .attr('width', chart.cellSize)
+                            .attr('height', chart.cellSize)
+                    },
+                    'exit:transition': function() {
+                        this.transition()
+                            .duration(TRANS_TIME / 2)
+                            .attr('width', 0)
+                            .attr('opacity', 0.0)
+                            .remove();
+                    }
+                }
+            });
+
+            this.layer('xAxis', xAxisBase, {
+                dataBind: function(data) {
+                    var chart = this.chart();
+
+                    var dates = d3.extent(data, G.get('date'));
+                    var firstMonth = new Date(dates[0].getFullYear(), dates[0].getMonth() + 1, 1);
+                    var lastMonth = new Date(dates[1].getFullYear(), dates[1].getMonth(), 1);
+
+                    var months = [];
+                    var month = firstMonth;
+                    while (month <= lastMonth) {
+                        months.push(month);
+                        month = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+                    }
+
+                    return this
+                        .attr('width', chart.width())
+                        .attr('height', 20)
+                        .selectAll('text')
+                            .data(months);
+                },
+                insert: function() {
+                    return this.append('text')
+                        .classed('x label', true)
+                        .style('font-family', 'sans');
+                },
+                events: {
+                    'enter': function() {
+                        var chart = this.chart();
+                        this.text(d3.time.format('%b'))
+                            .style('font-size', chart.cellSize + 'px')
+                            .attr('y', chart.cellSize * 0.8)
+                            .attr('x', function(d) {
+                                return chart.cellScaleX(xIndex({date: d})) + 1;
+                            })
+                    },
+                    'update:transition': function() {
+                        var chart = this.chart();
+                        this.transition()
+                            .duration(TRANS_TIME)
+                            .style('font-size', chart.cellSize + 'px')
+                            .attr('y', chart.cellSize * 0.8)
+                            .attr('x', function(d) {
+                                return chart.cellScaleX(xIndex({date: d})) + 1;
+                            })
+                    },
+                }
+            });
+
+            this.layer('yAxis', yAxisBase, {
+                dataBind: function(data) {
+                    var chart = this.chart();
+
+                    return this.selectAll('text')
+                        .data(['S', 'M', 'T', 'W', 'T', 'F', 'S']);
+                },
+                insert: function() {
+                    return this.append('text')
+                        .classed('y label', true)
+                        .style('text-anchor', 'middle')
+                        .style('font-family', 'sans');
+                },
+                events: {
+                    enter: function() {
+                        var chart = this.chart();
+                        this.text(G.ident)
+                            .attr('x', 4)
+                            .attr('y', G.compose(G.add(G.index, 0.75), chart.cellScaleY))
+                            .style('font-size', (chart.cellSize * 0.75) + 'px');
+                    },
+                    'update:transition': function() {
+                        var chart = this.chart();
+                        this.transition().duration(TRANS_TIME)
+                            .attr('x', chart.cellSize / 2)
+                            .attr('y', G.compose(G.add(G.index, 0.75), chart.cellScaleY))
+                            .style('font-size', (chart.cellSize * 0.75) + 'px')
+                    },
+                    exit: function() {
+                        this.remove();
+                    }
                 }
             });
         },
@@ -392,24 +504,30 @@
         transform: function(data) {
             // Figure out the biggest cell that will fit.
             this.cellSize = Math.floor(Math.min(
-                // Vertical fit. 7 cells, 6 gaps.
-                (this.height() - this.cellGap() * 6) / 7,
+                // Vertical fit. 7 cells, 6 gaps, and one more imaginary
+                // one on the edges.
+                (this.height() - this.cellGap() * 7) / 8,
                 // Horizontal fit.
-                this.width() / (data.length / 7) - this.cellGap()
+                this.width() / (data.length / 8) - this.cellGap()
             ));
 
             // These scales are smaller than the data. That's fine,
-            // d3.scale.linearx will extrapolate.
+            // d3.scale.linear will extrapolate.
             var lowestDate = d3.min(data, G.get('date'));
             this.numScale
                 .domain([lowestDate, +lowestDate + 24 * 60 * 60 * 1000])
                 .range([lowestDate.getDay(), lowestDate.getDay() + 1]);
-            this.cellScale
-                .domain([0, 1])
-                .range([0, this.cellSize + 1])
+            // These start from -1 so that there is an extra empty cell
+            // to place text in.
+            this.cellScaleX
+                .domain([-1, 0])
+                .range([0, this.cellSize + this.cellGap()])
+            this.cellScaleY
+                .domain([-1, 0])
+                .range([0, this.cellSize + this.cellGap()])
             this.colorScale
                 .domain([0, 1])
-                .range(['#fff', '#0f0']);
+                .range(['rgba(0, 0, 255, 0.1)', 'rgba(0, 0, 255, 1.0)']);
 
             return data;
         },

@@ -96,6 +96,13 @@ $(document).ready(function() {
         equal(G.compose(a, a)(0), 2);
     });
 
+    test('preservers index argument', function() {
+        function a(d, i) {
+            return i;
+        }
+        equal(G.compose(a)(0, 1), 1);
+    });
+
     module('k.graph.add');
 
     test('with two functions', function() {
@@ -131,6 +138,13 @@ $(document).ready(function() {
         equal(G.add(a, b, 2)(4), 14);
     });
 
+    test('preserves index', function() {
+        function a(d, i) {
+            return i;
+        }
+        equal(G.add(a, 1)(0, 1), 2);
+    });
+
     module('k.graph.multiply');
 
     test('with two functions', function() {
@@ -164,6 +178,13 @@ $(document).ready(function() {
 
         // 4 * (4 * 2) * 2 = 64
         equal(G.multiply(a, b, 2)(4), 64);
+    });
+
+    test('preserves index', function() {
+        function a(d, i) {
+            return i;
+        }
+        equal(G.multiply(a, 1)(0, 1), 1);
     });
 
 });

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <meta charset='utf-8'>
 <style>
-
 </style>
 <body>
 
 <div id='viz'></div>
+
+<button id="embiggen">embiggen</button>
 
 <script src='../js/libs/d3.js'></script>
 <script src='../js/libs/d3.chart.js'></script>
@@ -16,11 +17,11 @@
 
   var data = [];
   var now = new Date();
-  var yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDay());
+  var dataStart = new Date(now.getFullYear() - 1, now.getMonth(), now.getDay());
   var timestamp;
   var ONEDAY = 24 * 60 * 60 * 1000;
 
-  for (timestamp = +yearAgo; timestamp <= now; timestamp += ONEDAY) {
+  for (timestamp = +dataStart; timestamp <= now; timestamp += ONEDAY) {
     data.push({
       date: new Date(timestamp),
       heat: Math.random(),
@@ -28,8 +29,20 @@
   }
 
   var chart = d3.select('#viz')
-    .chart('CalendarHeatMap');
+    .chart('CalendarHeatMap')
+    .cellGap(1);
 
   chart.draw(data);
 
+  var grow = true;
+  document.querySelector('#embiggen').addEventListener('click', function(e) {
+    if (grow) {
+      chart.width(10000).height(200).draw(data);
+    } else {
+      chart.width(10000).height(100).draw(data);
+    }
+    grow = !grow;
+  });
+
 </script>
+

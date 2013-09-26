@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<style>
+
+</style>
+<body>
+
+<div id='viz'></div>
+
+<script src='../js/libs/d3.js'></script>
+<script src='../js/libs/d3.chart.js'></script>
+<script src='../js/graph.js'></script>
+<script>
+
+  var G = k.graph;
+
+  var data = [];
+  var now = new Date();
+  var yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDay());
+  var timestamp;
+  var ONEDAY = 24 * 60 * 60 * 1000;
+
+  for (timestamp = +yearAgo; timestamp <= now; timestamp += ONEDAY) {
+    data.push({
+      date: new Date(timestamp),
+      heat: Math.random(),
+    })
+  }
+
+  var chart = d3.select('#viz')
+    .chart('CalendarHeatMap');
+
+  chart.draw(data);
+
+</script>

@@ -12,15 +12,16 @@
 <input id="b" value="1" type="textbox">
 <br>
 <button id="big">Big</button>
+<button id="medium">Medium</button>
 <button id="small">Small</button>
 <br>
 
 
 <div id='viz'></div>
 
-<script src='js/libs/d3.js'></script>
-<script src='js/libs/d3.chart.js'></script>
-<script src='js/graph.js'></script>
+<script src='../js/libs/d3.js'></script>
+<script src='../js/libs/d3.chart.js'></script>
+<script src='../js/graph.js'></script>
 <script>
 
   var G = k.graph;
@@ -56,7 +57,7 @@
   var specs = [
     {
       x: G.get('x'),
-      y: G.multiply(G.get('a'), valueFromId('a')),
+      y: G.get('a'),
       stroke: '#f00',
     },
     {
@@ -101,6 +102,8 @@
       graph.width(1300).height(300).draw(data);
     } else if (matches(e.target, '#small')) {
       graph.width(500).height(200).draw(data);
+    } else {
+      graph.width(800).height(150).draw(data);
     }
   }, false);
 </script>

@@ -316,4 +316,107 @@
 
     });
 
+
+    /* A Github Profile style calendar heatmap.
+     *
+     * Arranged as columns of 7 days (to match a week), with a configurable
+     * gap.
+     *
+     * Configurable Properties:
+     * - width: Width of the entire svg. Default 700.
+     * - height: Height of the entire svg. Default 100.
+     * - cellGap: The spacing between cells. Default 1.
+     */
+    d3.chart('CalendarHeatMap', {
+        initialize: function() {
+            var svg = this.base.append('svg');
+            var daysBase = svg.append('g')
+                .classed('days', true);
+
+            this.numScale = d3.scale.linear();
+            this.cellScale = d3.scale.linear();
+            this.colorScale = d3.scale.linear();
+
+            function d3Dummy() {
+                return d3.select(this);
+            }
+
+            function xIndex(d) {
+                return Math.floor(this.numScale(d.date) / 7);
+            }
+            xIndex = xIndex.bind(this);
+
+            function yIndex(d) {
+                return this.numScale(d.date) % 7;
+            }
+            yIndex = yIndex.bind(this);
+
+            this.layer('svg', svg, {
+                dataBind: function(data) {
+                    var chart = this.chart();
+                    svg.attr('width', chart.width())
+                        .attr('height', chart.height());
+                    return svg.data([]);
+                },
+                insert: d3Dummy,
+                events: {
+                    enter: d3Dummy,
+                }
+            });
+
+            this.layer('days', daysBase, {
+                dataBind: function(data) {
+                    return this.selectAll('rect').data(data);
+                },
+                insert: function() {
+                    var chart = this.chart();
+                    return this.append('rect')
+                        .attr('width', chart.cellSize)
+                        .attr('height', chart.cellSize);
+                },
+                events: {
+                    enter: function() {
+                        var chart = this.chart();
+                        return this
+                            .attr('fill', G.compose(G.get('heat'), chart.colorScale))
+                            .attr('transform', function(d) {
+                                var x = chart.cellScale(xIndex(d));
+                                var y = chart.cellScale(yIndex(d));
+                                return 'translate(' + x + ',' + y + ')';
+                            });
+                    },
+                }
+            });
+        },
+
+        transform: function(data) {
+            // Figure out the biggest cell that will fit.
+            this.cellSize = Math.floor(Math.min(
+                // Vertical fit. 7 cells, 6 gaps.
+                (this.height() - this.cellGap() * 6) / 7,
+                // Horizontal fit.
+                this.width() / (data.length / 7) - this.cellGap()
+            ));
+
+            // These scales are smaller than the data. That's fine,
+            // d3.scale.linearx will extrapolate.
+            var lowestDate = d3.min(data, G.get('date'));
+            this.numScale
+                .domain([lowestDate, +lowestDate + 24 * 60 * 60 * 1000])
+                .range([lowestDate.getDay(), lowestDate.getDay() + 1]);
+            this.cellScale
+                .domain([0, 1])
+                .range([0, this.cellSize + 1])
+            this.colorScale
+                .domain([0, 1])
+                .range(['#fff', '#0f0']);
+
+            return data;
+        },
+
+        width: G.property(700),
+        height: G.property(100),
+        cellGap: G.property(1),
+    });
+
 })();

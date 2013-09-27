@@ -14,7 +14,7 @@
         "js/ajaxvote.js",
         "js/ajaxpreview.js",
         "js/tags.filter.js",
-        "js/graph.js",
+        "js/graphs/utils.js",
         "js/libs/jquery.lazyload.js"
     ]
 }

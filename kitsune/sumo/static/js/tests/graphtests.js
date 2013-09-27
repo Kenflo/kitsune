@@ -187,4 +187,38 @@ $(document).ready(function() {
         equal(G.multiply(a, 1)(0, 1), 1);
     });
 
+    module('k.graph.popThis');
+
+    test('it returns this', function() {
+        equal(G.popThis.call(0, 1, 2), 0);
+    });
+
+    module('k.graph.format');
+
+    test('it works with a single argument that is a function', function() {
+        function a(name) {
+            return name.toUpperCase();
+        }
+        equal(G.format('hello, {0}', a)('mike'), 'hello, MIKE');
+    });
+
+    test('it works with a single argument that is a value', function() {
+        function a(name) {
+            return name.toUpperCase();
+        }
+        equal(G.format('hello, {0}', 'Mike')(), 'hello, Mike');
+    });
+
+    test('it works with multiple mixed values', function() {
+        function a(s) {
+            return s.toLowerCase();
+        }
+        function b(s) {
+            return s.toUpperCase();
+        }
+        var actual = G.format('I like to eat {0}, {1}, and {2}', a, 'oranges', b)('Apples');
+        var expected = 'I like to eat apples, oranges, and APPLES';
+        equal(actual, expected);
+    });
+
 });

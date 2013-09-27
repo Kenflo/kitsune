@@ -21,7 +21,9 @@
 
 <script src='../js/libs/d3.js'></script>
 <script src='../js/libs/d3.chart.js'></script>
-<script src='../js/graph.js'></script>
+<script src='../js/graphs/utils.js'></script>
+<script src='../js/graphs/base.js'></script>
+<script src='../js/graphs/speclines.js'></script>
 <script>
 
   var G = k.graph;
@@ -57,7 +59,7 @@
   var specs = [
     {
       x: G.get('x'),
-      y: G.get('a'),
+      y: G.multiply(G.get('a'), valueFromId('a')),
       stroke: '#f00',
     },
     {

@@ -59,7 +59,7 @@
             store = newVal;
             return this;
         };
-    }; 
+    };
 
     /* Create a function that composes each argument passed as a parameter.
      *
@@ -74,7 +74,7 @@
             });
             return res;
         };
-    }
+    };
 
     /* Create a function that sums functors.
      *
@@ -90,7 +90,7 @@
             });
             return sum;
         };
-    }
+    };
 
     /* Create a function that multiplies functors.
      *
@@ -106,16 +106,16 @@
             });
             return product;
         };
-    }
+    };
 
-    /* Returns its second argument. 
-     * 
+    /* Returns its second argument.
+     *
      * Intended for use in places where d3 passes the current index as
      * the second argument.
      */
     G.index = function(d, i) {
         return i;
-    }
+    };
 
     /* Returns its `this` context.
      *
@@ -123,7 +123,7 @@
      * for functional style. */
     G.popThis = function() {
         return this;
-    }
+    };
 
     /* Makes a formatting function.
      *
@@ -141,13 +141,28 @@
         var args = Array.prototype.slice.call(arguments, 1).map(d3.functor);
 
         return function(d) {
-            return fmt.replace(/\{[\d]+\}/g, function(key) {
+            return fmt.replace(/\{[\d\w\.]+\}/g, function(key) {
                 // Strip off {}
                 key = key.slice(1, -1);
-                var index = parseInt(key, 10);
-                return args[index](d);
+                var selectors = key.split('.');
+
+                return G.dottedGet(key, d)(args);
             });
         };
-    }
+    };
+
+    /* Like k.graph.get, but allows for dots in keys to get deeper objects. */
+    G.dottedGet = function(selectors, d) {
+        selectors = selectors.split('.');
+        return function(obj) {
+            for (var i = 0; i < selectors.length; i++) {
+                obj = d3.functor(obj[selectors[i]])(d);
+                if (obj === undefined) {
+                    return undefined;
+                }
+            }
+            return obj;
+        };
+    };
 
 })();

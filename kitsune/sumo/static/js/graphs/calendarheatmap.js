@@ -13,51 +13,91 @@
      */
     d3.chart('Base').extend('CalendarHeatMap', {
         initialize: function() {
-            var tooltip = this.base.append('div')
-                .style('opacity', '0.0')
-                .style('position', 'absolute')
-                .style('background', '#ddd')
-                .style('padding', '10px')
-                .style('pointer-events', 'none')
-                .style('top', 0)
-                .style('left', 0);
 
+            var hoverBase = this.svg.append('g')
+                .classed('hover', true);
             var daysBase = this.svg.append('g')
                 .classed('days', true);
             var xAxisBase = this.svg.append('g')
                 .classed('x axis', true);
             var yAxisBase = this.svg.append('g')
                 .classed('y axis', true);
+            var tooltip = this.base.append('div')
+                .classed('tooltip', true)
+                // These should probably be in a style sheet.
+                .style('display', 'none')
+                .style('position', 'absolute')
+                .style('left', '-10px')
+                .style('top', '10px')
+                .style('background', 'rgba(240, 240, 240, 0.95)')
+                .style('pointer-events', 'none');
 
             this.numScale = d3.scale.linear();
             this.cellScaleX = d3.scale.linear();
             this.cellScaleY = d3.scale.linear();
             this.colorScale = d3.scale.linear();
 
-            d3.select('body').on('mousemove', function(d, i) {
-                var mouse = d3.mouse(daysBase[0][0]);
-                if (mouse[0] < 0 || mouse[0] > this.width() ||
-                    mouse[1] < 0 || mouse[1] > this.height()) {
+            var xIndex = function(d) {
+                return Math.floor(this.numScale(d) / 7);
+            }.bind(this);
 
-                    tooltip.transition().duration(100)
-                        .style('opacity', '0.0')
-                        .style('transform', 'translate(0,0)');
-                }
-            }.bind(this));
+            var yIndex = function(d) {
+                return this.numScale(d) % 7;
+            }.bind(this);
 
-            d3Dummy = G.compose(G.popThis, d3.select);
 
-            function xIndex(d) {
-                return Math.floor(this.numScale(d.date) / 7);
+            var chart = this;
+            this.base.select('svg')
+                .on('mouseover', function() {
+                    var daySel = d3.select(d3.event.target);
+                    var data = d3.event.target.__data__;
+
+                    if (daySel.empty() || data === undefined) return;
+
+                    var trans = daySel.attr('transform');
+                    var match = /.*translate\(([\-\d\.]+),([\-\d\.]+)\).*/.exec(trans);
+                    if (!match) return;
+
+                    tooltip
+                        .text(chart.tooltipFormat()(data))
+                        .style('display', 'block')
+                        .style('transform', G.format('translate({0.1}px,{0.2}px)', match));
+                })
+                .on('mouseout', function() {
+                    var target = d3.event.target;
+                    if (d3.select(target).filter('rect.pointer-target').empty()) {
+                        return;
+                    }
+                    tooltip.style('display', 'none');
+                });
+
+
+            this.layer('hover', hoverBase, {
+                'dataBind': function() {
+                    var chart = this.chart();
+                    this.append('rect')
+                        .classed('pointer-target', true)
+                        .style('fill', 'none')
+                        .style('pointer-events', 'all')
+                        .attr('width', chart.width())
+                        .attr('height', chart.height());
+                    return this.data([]);
+                },
+                insert: G.compose(G.popThis, d3.select),
+            });
+
+            function daysMerge(selection) {
+                var chart = selection.chart();
+                return selection
+                    .attr('fill', G.compose(G.get('heat'), chart.colorScale))
+                    .attr('width', chart.cellSize)
+                    .attr('height', chart.cellSize)
+                    .attr('transform', G.format('translate({0},{1})',
+                        G.compose(G.get('date'), xIndex, chart.cellScaleX),
+                        G.compose(G.get('date'), yIndex, chart.cellScaleY)));
             }
-            xIndex = xIndex.bind(this);
 
-            function yIndex(d) {
-                return this.numScale(d.date) % 7;
-            }
-            yIndex = yIndex.bind(this);
-
-            this.layer('days', daysBase, {
+            this.days = this.layer('days', daysBase, {
                 dataBind: function(data) {
                     return this.selectAll('rect').data(data);
                 },
@@ -69,54 +109,32 @@
                 },
                 events: {
                     enter: function() {
-                        var chart = this.chart();
-
-                        return this
-                            .attr('fill', G.compose(G.get('heat'), chart.colorScale))
-                            .attr('width', chart.cellSize)
-                            .attr('height', chart.cellSize)
-
-                            .attr('transform', G.format('translate({0},{1})',
-                                G.compose(xIndex, chart.cellScaleX),
-                                G.compose(yIndex, chart.cellScaleY)))
-
-                            .on('mouseover', function(d, i) {
-                                var elem = d3.select(this);
-                                var trans = elem.attr('transform');
-                                var match = /.*translate\((.*)\).*/.exec(trans);
-                                console.log(trans, match);
-                                if (match) {
-                                    match = match[1].split(',');
-                                    var x = parseInt(match[0]) - chart.cellSize / 2;
-                                    var y = parseInt(match[1]) + chart.cellSize * 1.25;
-
-                                    tooltip
-                                        .text(d3.time.format('%B %d, %Y')(d.date))
-                                        .style('opacity', '1.0')
-                                        .style('transform', G.format('translate({0},{1})', x, y));
-                                }
-                            });
+                        this.call(daysMerge);
                     },
                     'update:transition': function() {
                         var chart = this.chart();
-                        return this.transition()
-                            .duration(chart.transitionTime())
-                            .attr('fill', G.compose(G.get('heat'), chart.colorScale))
-                            .attr('width', chart.cellSize)
-                            .attr('height', chart.cellSize)
-                            .attr('transform', G.format('translate({0},{1})',
-                                G.compose(xIndex, chart.cellScaleX),
-                                G.compose(yIndex, chart.cellScaleY)))
+                        this.duration(chart.transitionTime())
+                            .call(daysMerge);
                     },
                     'exit:transition': function() {
-                        this.transition()
-                            .duration(chart.transitionTime() / 2)
+                        var chart = this.chart();
+                        this.duration(chart.transitionTime() / 2)
                             .attr('width', 0)
                             .attr('opacity', 0.0)
                             .remove();
                     }
                 }
             });
+
+
+            function xAxisMerge(selection) {
+                var chart = selection.chart();
+                return selection
+                    .text(d3.time.format('%b'))
+                    .style('font-size', chart.cellSize + 'px')
+                    .attr('x', G.add(G.compose(xIndex, chart.cellScaleX), 1))
+                    .attr('y', chart.cellSize * 0.8);
+            }
 
             this.layer('xAxis', xAxisBase, {
                 dataBind: function(data) {
@@ -146,31 +164,28 @@
                 },
                 events: {
                     'enter': function() {
-                        var chart = this.chart();
-                        this.text(d3.time.format('%b'))
-                            .style('font-size', chart.cellSize + 'px')
-                            .attr('y', chart.cellSize * 0.8)
-                            .attr('x', function(d) {
-                                return chart.cellScaleX(xIndex({date: d})) + 1;
-                            })
+                        return this.call(xAxisMerge);
                     },
                     'update:transition': function() {
                         var chart = this.chart();
-                        this.transition()
-                            .duration(chart.transitionTime())
-                            .style('font-size', chart.cellSize + 'px')
-                            .attr('y', chart.cellSize * 0.8)
-                            .attr('x', function(d) {
-                                return chart.cellScaleX(xIndex({date: d})) + 1;
-                            })
+                        this.duration(chart.transitionTime())
+                            .call(xAxisMerge);
                     },
                 }
             });
 
-            this.layer('yAxis', yAxisBase, {
-                dataBind: function(data) {
-                    var chart = this.chart();
 
+            function yAxisMerge(selection) {
+                var chart = selection.chart();
+                return selection
+                    .text(G.ident)
+                    .attr('x', chart.cellSize / 2)
+                    .attr('y', G.compose(G.add(G.index, 0.75), chart.cellScaleY))
+                    .style('font-size', (chart.cellSize * 0.75) + 'px');
+            }
+
+            this.layer('yAxis', yAxisBase, {
+                dataBind: function() {
                     return this.selectAll('text')
                         .data(['S', 'M', 'T', 'W', 'T', 'F', 'S']);
                 },
@@ -182,18 +197,12 @@
                 },
                 events: {
                     enter: function() {
-                        var chart = this.chart();
-                        this.text(G.ident)
-                            .attr('x', 4)
-                            .attr('y', G.compose(G.add(G.index, 0.75), chart.cellScaleY))
-                            .style('font-size', (chart.cellSize * 0.75) + 'px');
+                        return this.call(yAxisMerge);
                     },
                     'update:transition': function() {
                         var chart = this.chart();
-                        this.transition().duration(chart.transitionTime())
-                            .attr('x', chart.cellSize / 2)
-                            .attr('y', G.compose(G.add(G.index, 0.75), chart.cellScaleY))
-                            .style('font-size', (chart.cellSize * 0.75) + 'px')
+                        this.duration(chart.transitionTime())
+                            .call(yAxisMerge);
                     },
                     exit: function() {
                         this.remove();
@@ -202,32 +211,35 @@
             });
         },
 
+
         transform: function(data) {
+            var dateExtent = d3.extent(data, G.get('date'));
+
+            // This counts the number of rows that should be on the
+            // grid, accounting for the blank days at the start and end,
+            // and space for the labels.
+            var dayGridWidth = (data.length + dateExtent[0].getDay() + 7 - dateExtent[1].getDay()) / 7 + 1;
+
             // Figure out the biggest cell that will fit.
-            this.cellSize = Math.floor(Math.min(
-                // Vertical fit. 7 cells, 6 gaps, and one more imaginary
-                // one on the edges.
-                (this.height() - this.cellGap() * 7) / 8,
-                // Horizontal fit.
-                this.width() / (data.length / 8) - this.cellGap()
-            ));
+            var vertFit = (this.height() - this.cellGap() * 7) / 8;
+            var horzFit = this.width() / dayGridWidth - this.cellGap();
+            this.cellSize = Math.floor(Math.min(vertFit, horzFit));
 
             // These scales are smaller than the data. That's fine,
             // d3.scale.linear will extrapolate.
-            var lowestDate = d3.min(data, G.get('date'));
             this.numScale
-                .domain([lowestDate, +lowestDate + 24 * 60 * 60 * 1000])
-                .range([lowestDate.getDay(), lowestDate.getDay() + 1]);
+                .domain([dateExtent[0], +dateExtent[0] + 24 * 60 * 60 * 1000])
+                .range([dateExtent[0].getDay(), dateExtent[0].getDay() + 1]);
             // These start from -1 so that there is an extra empty cell
             // to place text in.
             this.cellScaleX
                 .domain([-1, 0])
-                .range([0, this.cellSize + this.cellGap()])
+                .range([0, this.cellSize + this.cellGap()]);
             this.cellScaleY
                 .domain([-1, 0])
-                .range([0, this.cellSize + this.cellGap()])
+                .range([0, this.cellSize + this.cellGap()]);
             this.colorScale
-                .domain([0, 1])
+                .domain(d3.extent(data, G.get('heat')))
                 .range(['rgba(0, 0, 255, 0.1)', 'rgba(0, 0, 255, 1.0)']);
 
             return data;
@@ -236,6 +248,7 @@
         width: G.property(700),
         height: G.property(100),
         cellGap: G.property(1),
+        tooltipFormat: G.property(G.format('{0.date} - {0.heat}', G.ident)),
     });
 
 })();

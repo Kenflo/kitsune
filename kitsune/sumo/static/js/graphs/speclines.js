@@ -74,8 +74,7 @@
                             } else if (axis.orient() === 'bottom') {
                                 ty = chart.height() - 30;
                             }
-                            elem.transition()
-                                .duration(TRANS_TIME)
+                            elem.duration(TRANS_TIME)
                                 .attr('transform', G.format('translate({0},{1})', tx, ty))
                                 .call(axis);
                         });

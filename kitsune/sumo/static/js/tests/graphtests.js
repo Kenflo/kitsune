@@ -1,3 +1,4 @@
+/* globals $, k, module, test, ok, equal, asyncTest, expect, stop, start */
 /*
  * Tests for k.graph.*.
  */
@@ -30,12 +31,12 @@ $(document).ready(function() {
     module('k.graph.ident');
 
     test('works for simple values', function() {
-        equals(G.ident(5), 5);
+        equal(G.ident(5), 5);
     });
 
     test('works for objects', function() {
         var foo = {a: 1, b: 2};
-        equals(G.ident(foo), foo);
+        equal(G.ident(foo), foo);
     });
 
 
@@ -203,9 +204,6 @@ $(document).ready(function() {
     });
 
     test('it works with a single argument that is a value', function() {
-        function a(name) {
-            return name.toUpperCase();
-        }
         equal(G.format('hello, {0}', 'Mike')(), 'hello, Mike');
     });
 
@@ -219,6 +217,49 @@ $(document).ready(function() {
         var actual = G.format('I like to eat {0}, {1}, and {2}', a, 'oranges', b)('Apples');
         var expected = 'I like to eat apples, oranges, and APPLES';
         equal(actual, expected);
+    });
+
+    test('it works with dotted gets', function() {
+        var d = {
+            username: 'bob',
+            count: 9001,
+        };
+        function a() {
+            return 'commits';
+        }
+        var actual = G.format('{0.username} made {0.count} {1}', G.ident, a)(d);
+        var expected = 'bob made 9001 commits';
+        equal(actual, expected);
+    });
+
+    module('k.graph.dottedGet');
+
+    test('it works with undotted selectors on values', function() {
+        var foo = {bar: 5};
+        equal(G.dottedGet('bar')(foo), 5);
+    });
+
+    test('it works with undotted selectors on function', function() {
+        function a() {
+            return 5;
+        }
+        equal(G.dottedGet('foo')({foo: a}), 5);
+    });
+
+    test('it works with dotted selectors on values', function() {
+        var foo = {bar: {baz: 5}};
+        equal(G.dottedGet('bar.baz')(foo), 5);
+    });
+
+    test('it works with dotted selectors on functions', function() {
+        function a() {
+            return {bar: 5};
+        }
+        equal(G.dottedGet('foo.bar')({foo: a}), 5);
+    });
+
+    test('if anything is undefined it returns undefiend', function() {
+        equal(G.dottedGet('foo.bar.baz')({foo: {}}), undefined);
     });
 
 });

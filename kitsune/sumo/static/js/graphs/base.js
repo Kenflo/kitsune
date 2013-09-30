@@ -7,7 +7,8 @@
         initialize: function() {
             this.base.style('position', 'relative');
 
-            this.svg = this.base.append('svg');
+            this.svg = this.base.append('svg')
+                .style('pointer-events', 'all');
 
             var d3Dummy = G.compose(G.popThis, d3.select);
 

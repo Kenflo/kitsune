@@ -59,7 +59,7 @@
                     if (!match) return;
 
                     tooltip
-                        .text(chart.tooltipFormat()(data))
+                        .html(chart.tooltipFormat()(data))
                         .style('display', 'block')
                         .style('transform', G.format('translate({0.1}px,{0.2}px)', match));
                 })

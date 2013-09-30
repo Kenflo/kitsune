@@ -31,7 +31,7 @@
         })
     }
 
-    var formatter = G.format('{0.username} - {0.heat} - {1}',
+    var formatter = G.format('<b>{0.username}</b> - {0.heat} - {1}',
         G.ident, G.compose(G.get('date'), d3.time.format('%b %d')));
 
     var chart = d3.select('#viz')

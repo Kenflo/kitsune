@@ -5,8 +5,6 @@
     /* Draws several lines on a graph, based on some data and some specs. */
     d3.chart('Base').extend('SpecLines', {
         initialize: function() {
-            var TRANS_TIME = 600;
-
             var lineBase = this.svg.append('g')
                 .classed('lines', true);
             var axesBase = this.svg.append('g')
@@ -23,10 +21,8 @@
                 .x(G.compose(G.get(0), this.scaleX))
                 .y(G.compose(G.get(1), this.scaleY));
 
-            var d3Dummy = G.compose(G.popThis, d3.select);
-
             this.layer('axes', axesBase, {
-                dataBind: function(data) {
+                dataBind: function() {
                     var chart = this.chart();
                     return this.selectAll('g.axis').data([
                         d3.svg.axis()
@@ -43,7 +39,7 @@
                 },
                 insert: function() {
                     return this.append('g')
-                        .classed('axis', true)
+                        .classed('axis', true);
                 },
                 events: {
                     enter: function() {
@@ -65,19 +61,19 @@
                     'update:transition': function() {
                         var chart = this.chart();
 
-                        this.each(function(axis) {
-                            var elem = d3.select(this);
-                            var tx = 0;
-                            var ty = 0;
-                            if (axis.orient() === 'left') {
-                                tx = 30;
-                            } else if (axis.orient() === 'bottom') {
-                                ty = chart.height() - 30;
-                            }
-                            elem.duration(TRANS_TIME)
-                                .attr('transform', G.format('translate({0},{1})', tx, ty))
-                                .call(axis);
-                        });
+                        this.duration(chart.transitionTime())
+                            .each(function(axis) {
+                                var elem = d3.select(this);
+                                var tx = 0;
+                                var ty = 0;
+                                if (axis.orient() === 'left') {
+                                    tx = 30;
+                                } else if (axis.orient() === 'bottom') {
+                                    ty = chart.height() - 30;
+                                }
+                                elem.attr('transform', G.format('translate({0},{1})', tx, ty))
+                                    .call(axis);
+                            });
                     },
                 }
             });
@@ -98,15 +94,17 @@
                             .attr('stroke', '#000');
                     },
                     'enter:transition': function() {
+                        var chart = this.chart();
                         return this
                             .delay(function(d, i) { return i * 200; })
-                            .duration(TRANS_TIME)
+                            .duration(chart.transitionTime())
                             .attr('d', G.compose(G.get('points'), line))
                             .attr('stroke', G.get('stroke'));
                     },
                     'update:transition': function() {
+                        var chart = this.chart();
                         return this
-                            .duration(TRANS_TIME)
+                            .duration(chart.transitionTime())
                             .attr('d', G.compose(G.get('points'), line))
                             .attr('stroke', G.get('stroke'));
                     },

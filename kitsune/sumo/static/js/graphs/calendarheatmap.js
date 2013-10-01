@@ -93,8 +93,8 @@
                     .attr('width', chart.cellSize)
                     .attr('height', chart.cellSize)
                     .attr('transform', G.format('translate({0},{1})',
-                        G.compose(G.get('date'), xIndex, chart.cellScaleX),
-                        G.compose(G.get('date'), yIndex, chart.cellScaleY)));
+                        G.compose(chart.date(), xIndex, chart.cellScaleX),
+                        G.compose(chart.date(), yIndex, chart.cellScaleY)));
             }
 
             this.days = this.layer('days', daysBase, {
@@ -140,7 +140,7 @@
                 dataBind: function(data) {
                     var chart = this.chart();
 
-                    var dates = d3.extent(data, G.get('date'));
+                    var dates = d3.extent(data, chart.date());
                     var firstMonth = new Date(dates[0].getFullYear(), dates[0].getMonth() + 1, 1);
                     var lastMonth = new Date(dates[1].getFullYear(), dates[1].getMonth(), 1);
 
@@ -213,7 +213,7 @@
 
 
         transform: function(data) {
-            var dateExtent = d3.extent(data, G.get('date'));
+            var dateExtent = d3.extent(data, this.date());
 
             // This counts the number of rows that should be on the
             // grid, accounting for the blank days at the start and end,
@@ -249,7 +249,9 @@
         height: G.property(100),
         cellGap: G.property(1),
         tooltipFormat: G.property(G.format('{0.date} - {0.heat}', G.ident)),
+
         heat: G.property(G.get('heat')),
+        date: G.property(G.get('date')),
     });
 
 })();

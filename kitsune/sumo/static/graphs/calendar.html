@@ -26,7 +26,7 @@
     for (timestamp = +dataStart; timestamp <= now; timestamp += ONEDAY) {
         data.push({
             date: new Date(timestamp),
-            heat: Math.floor(Math.random() * 10),
+            hottness: Math.floor(Math.random() * 10),
             username: 'Bob',
         })
     }
@@ -36,7 +36,8 @@
 
     var chart = d3.select('#viz')
         .chart('CalendarHeatMap')
-        .tooltipFormat(formatter);
+        .tooltipFormat(formatter)
+        .heat(G.get('hottness'));
 
     chart.draw(data);
 

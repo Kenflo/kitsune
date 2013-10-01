@@ -89,7 +89,7 @@
             function daysMerge(selection) {
                 var chart = selection.chart();
                 return selection
-                    .attr('fill', G.compose(G.get('heat'), chart.colorScale))
+                    .attr('fill', G.compose(chart.heat(), chart.colorScale))
                     .attr('width', chart.cellSize)
                     .attr('height', chart.cellSize)
                     .attr('transform', G.format('translate({0},{1})',
@@ -239,7 +239,7 @@
                 .domain([-1, 0])
                 .range([0, this.cellSize + this.cellGap()]);
             this.colorScale
-                .domain(d3.extent(data, G.get('heat')))
+                .domain(d3.extent(data, this.heat()))
                 .range(['rgba(0, 0, 255, 0.1)', 'rgba(0, 0, 255, 1.0)']);
 
             return data;
@@ -249,6 +249,7 @@
         height: G.property(100),
         cellGap: G.property(1),
         tooltipFormat: G.property(G.format('{0.date} - {0.heat}', G.ident)),
+        heat: G.property(G.get('heat')),
     });
 
 })();

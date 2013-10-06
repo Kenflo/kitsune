@@ -58,10 +58,15 @@
                     var match = /.*translate\(([\-\d\.]+),([\-\d\.]+)\).*/.exec(trans);
                     if (!match) return;
 
+                    var trans = G.format('translate({0.1}px,{0.2}px)', match)();
+                    console.log(trans);
+
                     tooltip
                         .html(chart.tooltipFormat()(data))
                         .style('display', 'block')
-                        .style('transform', G.format('translate({0.1}px,{0.2}px)', match));
+                        .style('transform', trans)
+                        // Really Chrome?
+                        .style('-webkit-transform', trans);
                 })
                 .on('mouseout', function() {
                     var target = d3.event.target;
@@ -213,12 +218,13 @@
 
 
         transform: function(data) {
-            var dateExtent = d3.extent(data, this.date());
+            data = d3.chart('Base').prototype.transform.call(this, data);
+            var dateExtents = d3.extent(data, this.date());
 
             // This counts the number of rows that should be on the
             // grid, accounting for the blank days at the start and end,
             // and space for the labels.
-            var dayGridWidth = (data.length + dateExtent[0].getDay() + 7 - dateExtent[1].getDay()) / 7 + 1;
+            var dayGridWidth = (data.length + dateExtents[0].getDay() + 7 - dateExtents[1].getDay()) / 7 + 1;
 
             // Figure out the biggest cell that will fit.
             var vertFit = (this.height() - this.cellGap() * 7) / 8;
@@ -228,8 +234,8 @@
             // These scales are smaller than the data. That's fine,
             // d3.scale.linear will extrapolate.
             this.numScale
-                .domain([dateExtent[0], +dateExtent[0] + 24 * 60 * 60 * 1000])
-                .range([dateExtent[0].getDay(), dateExtent[0].getDay() + 1]);
+                .domain([dateExtents[0], +dateExtents[0] + 24 * 60 * 60 * 1000])
+                .range([dateExtents[0].getDay(), dateExtents[0].getDay() + 1]);
             // These start from -1 so that there is an extra empty cell
             // to place text in.
             this.cellScaleX
@@ -249,6 +255,7 @@
         height: G.property(100),
         cellGap: G.property(1),
         tooltipFormat: G.property(G.format('{0.date} - {0.heat}', G.ident)),
+        color: G.property('#00f'),
 
         heat: G.property(G.get('heat')),
         date: G.property(G.get('date')),

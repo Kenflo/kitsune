@@ -188,6 +188,7 @@ d3Chart.assert(typeof d3.version === "string" && d3.version.match(/^3/),
 		this.on = function() { return layer.on.apply(layer, arguments); };
 		this.off = function() { return layer.off.apply(layer, arguments); };
 		this.draw = function() { return layer.draw.apply(layer, arguments); };
+		this._layer = layer;
 
 		return this;
 	};

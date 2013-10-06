@@ -13,7 +13,7 @@
             var d3Dummy = G.compose(G.popThis, d3.select);
 
             this.layer('svg', this.svg, {
-                dataBind: function(data) {
+                dataBind: function() {
                     var chart = this.chart();
                     this.transition()
                        .duration(chart.transitionTime())
@@ -26,6 +26,16 @@
                     enter: d3Dummy,
                 }
             });
+        },
+
+        transform: function(data) {
+            this.data = data;
+            return data;
+        },
+
+        redraw: function() {
+            this.draw(this.data);
+            return this;
         },
 
         width: G.property(600),

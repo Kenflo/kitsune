@@ -67,6 +67,11 @@
      */
     G.compose = function(/* funcs */) {
         var funcs = Array.prototype.slice.call(arguments);
+        funcs.forEach(function(func, i) {
+            if (typeof(func) !== 'function') {
+                throw 'Argument #' + i + ' is not a function: ' + func;
+            }
+        });
         return function(d, i) {
             var res = d;
             funcs.forEach(function(func) {

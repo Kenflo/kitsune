@@ -13,11 +13,11 @@
             this.scaleX = d3.scale.linear();
             this.scaleY = d3.scale.linear();
 
-            var zeroLine = d3.svg.line()
+            this.zeroLine = d3.svg.line()
                 .x(G.compose(G.get(0), this.scaleX))
                 .y(this.scaleY.bind(null, 0));
 
-            var line = d3.svg.line()
+            this.line = d3.svg.line()
                 .x(G.compose(G.get(0), this.scaleX))
                 .y(G.compose(G.get(1), this.scaleY));
 
@@ -71,14 +71,15 @@
                                 } else if (axis.orient() === 'bottom') {
                                     ty = chart.height() - 30;
                                 }
-                                elem.attr('transform', G.format('translate({0},{1})', tx, ty))
+                                elem
+                                    .attr('transform', G.format('translate({0},{1})', tx, ty))
                                     .call(axis);
                             });
                     },
                 }
             });
 
-            this.layer('lines', lineBase, {
+            this.linesLayer = this.layer('lines', lineBase, {
                 dataBind: function(data) {
                     return this.selectAll('path').data(data);
                 },
@@ -89,8 +90,9 @@
                 },
                 events: {
                     enter: function() {
+                        var chart = this.chart();
                         return this
-                            .attr('d', G.compose(G.get('points'), zeroLine))
+                            .attr('d', G.compose(G.get('points'), chart.zeroLine))
                             .attr('stroke', '#000');
                     },
                     'enter:transition': function() {
@@ -98,14 +100,14 @@
                         return this
                             .delay(function(d, i) { return i * 200; })
                             .duration(chart.transitionTime())
-                            .attr('d', G.compose(G.get('points'), line))
+                            .attr('d', G.compose(G.get('points'), chart.line))
                             .attr('stroke', G.get('stroke'));
                     },
                     'update:transition': function() {
                         var chart = this.chart();
                         return this
                             .duration(chart.transitionTime())
-                            .attr('d', G.compose(G.get('points'), line))
+                            .attr('d', G.compose(G.get('points'), chart.line))
                             .attr('stroke', G.get('stroke'));
                     },
                 },
@@ -122,6 +124,8 @@
          * layers' dataBind methods, and the return value will be the argument
          * to those functions. */
         transform: function(data) {
+            data = d3.chart('Base').prototype.transform.call(this, data);
+
             var minX = Infinity;
             var maxX = -Infinity;
             var minY = 0;
@@ -134,10 +138,10 @@
                     points: data.map(function(d) {
                         var x = spec.x(d);
                         var y = spec.y(d);
-                        minX = Math.min(minX, x);
-                        maxX = Math.max(minX, x);
-                        minY = Math.min(minY, y);
-                        maxY = Math.max(maxY, y);
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
                         return [x, y];
                     })
                 };

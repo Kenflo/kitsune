@@ -104,6 +104,16 @@ $(document).ready(function() {
         equal(G.compose(a)(0, 1), 1);
     });
 
+    test('Can compose compositions', function() {
+        var obj = {a: {b: {c: 1}}};
+        function a(d) { return d.a; }
+        function b(d) { return d.b; }
+        function c(d) { return d.c; }
+        var d = G.compose(a, b);
+        var e = G.compose(d, c);
+        equal(e(obj), 1);
+    });
+
     module('k.graph.add');
 
     test('with two functions', function() {

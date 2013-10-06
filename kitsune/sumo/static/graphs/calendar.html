@@ -31,16 +31,17 @@
         })
     }
 
-    var formatter = G.format('<b>{0.username}</b> - {0.heat} - {1}',
-        G.ident, G.compose(G.get('date'), d3.time.format('%b %d')));
+    var dateGetter = function(d) {
+        return new Date(d.when);
+    }
+    var formatter = G.format('<b>{0.username}</b> - {0.hottness} - {1}',
+        G.ident, G.compose(dateGetter, d3.time.format('%b %d')));
 
     var chart = d3.select('#viz')
         .chart('CalendarHeatMap')
         .tooltipFormat(formatter)
         .heat(G.get('hottness'))
-        .date(function(d) {
-            return new Date(d.when);
-        });
+        .date(dateGetter);
 
     chart.draw(data);
 

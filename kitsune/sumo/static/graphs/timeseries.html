@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<style>
+
+</style>
+<body>
+
+<div id='viz'></div>
+
+<script src='../js/libs/d3.js'></script>
+<script src='../js/libs/d3.chart.js'></script>
+<script src='../js/graphs/utils.js'></script>
+<script src='../js/graphs/base.js'></script>
+<script src='../js/graphs/speclines.js'></script>
+<script src='../js/graphs/timeseries.js'></script>
+<script>
+
+  var G = k.graph;
+  var url = 'http://kitsune/en-US/kpi/api/v1/kpi_active_contributors/';
+  var dateParser = d3.time.format('%Y-%m-%d').parse;
+
+  var specs = [
+    {
+      x: G.compose(G.get('date'), dateParser),
+      y: G.get('aoa'),
+      stroke: '#f00',
+    },
+    {
+      x: G.compose(G.get('date'), dateParser),
+      y: G.get('en_us'),
+      stroke: '#0f0',
+    },
+    {
+      x: G.compose(G.get('date'), dateParser),
+      y: G.get('non_en_us'),
+      stroke: '#00f',
+    },
+    {
+      x: G.compose(G.get('date'), dateParser),
+      y: G.get('support_forum'),
+      stroke: '#f0f',
+    },
+  ];
+
+  var graph = d3.select('#viz')
+    .chart('TimeSeries')
+    .width(800)
+    .height(450)
+    .specs(specs);
+
+  d3.json(url, function(data) {
+    window.data = data;
+    graph.draw(data.objects);
+  });
+</script>
